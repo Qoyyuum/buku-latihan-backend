@@ -1,0 +1,7 @@
+# PostgreSQL
+# ------------------------------------------------------------------------------
+POSTGRES_HOST=postgres
+POSTGRES_PORT=5432
+POSTGRES_DB=buku_latihan
+POSTGRES_USER=VKOAoVPqtsmSuoTmRznXjDnnEGcYfVwh
+POSTGRES_PASSWORD=MiCprsOdJo2O6DYFiK3JAgAcZKbzpLtuHoxRl8mCIqeZ4SrG4czFBKXEpoL9kVWp
