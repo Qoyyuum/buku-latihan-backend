@@ -1,16 +1,13 @@
 from __future__ import unicode_literals
-
 from django.utils.translation import gettext_lazy as _
 from django.db import models
 from quiz.models import Question
-
 
 ANSWER_ORDER_OPTIONS = (
     ('content', _('Content')),
     ('random', _('Random')),
     ('none', _('None'))
 )
-
 
 class MCQuestion(Question):
 
@@ -52,8 +49,6 @@ class MCQuestion(Question):
     class Meta:
         verbose_name = _("Multiple Choice Question")
         verbose_name_plural = _("Multiple Choice Questions")
-
-
 
 class Answer(models.Model):
     question = models.ForeignKey(MCQuestion, verbose_name=_("Question"), on_delete=models.CASCADE)

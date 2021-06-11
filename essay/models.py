@@ -3,8 +3,6 @@ from __future__ import unicode_literals
 from django.utils.translation import gettext_lazy as _
 from quiz.models import Question
 
-
-
 class Essay_Question(Question):
 
     def check_if_correct(self, guess):
