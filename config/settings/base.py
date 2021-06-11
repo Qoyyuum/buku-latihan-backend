@@ -75,7 +75,7 @@ THIRD_PARTY_APPS = [
 ]
 
 LOCAL_APPS = [
-    "users.apps.UsersConfig",
+    "buku_latihan.users.apps.UsersConfig",
     # Your stuff: custom apps go here
     "quiz",
     "essay",
@@ -89,7 +89,7 @@ INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 # MIGRATIONS
 # ------------------------------------------------------------------------------
 # https://docs.djangoproject.com/en/dev/ref/settings/#migration-modules
-MIGRATION_MODULES = {"sites": "contrib.sites.migrations"}
+MIGRATION_MODULES = {"sites": "buku_latihan.contrib.sites.migrations"}
 
 # AUTHENTICATION
 # ------------------------------------------------------------------------------
@@ -189,7 +189,7 @@ TEMPLATES = [
                 "django.template.context_processors.static",
                 "django.template.context_processors.tz",
                 "django.contrib.messages.context_processors.messages",
-                "utils.context_processors.settings_context",
+                "buku_latihan.utils.context_processors.settings_context",
             ],
         },
     }
@@ -293,9 +293,9 @@ ACCOUNT_EMAIL_REQUIRED = True
 # https://django-allauth.readthedocs.io/en/latest/configuration.html
 ACCOUNT_EMAIL_VERIFICATION = "mandatory"
 # https://django-allauth.readthedocs.io/en/latest/configuration.html
-ACCOUNT_ADAPTER = "users.adapters.AccountAdapter"
+ACCOUNT_ADAPTER = "buku_latihan.users.adapters.AccountAdapter"
 # https://django-allauth.readthedocs.io/en/latest/configuration.html
-SOCIALACCOUNT_ADAPTER = "users.adapters.SocialAccountAdapter"
+SOCIALACCOUNT_ADAPTER = "buku_latihan.users.adapters.SocialAccountAdapter"
 # django-compressor
 # ------------------------------------------------------------------------------
 # https://django-compressor.readthedocs.io/en/latest/quickstart/#installation
