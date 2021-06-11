@@ -4,7 +4,7 @@ Practicing Past Year Papers online. This is the backend of the application. Made
 
 ## Development
 
-After `git clone`, run:
+After `git clone`, run the following commands in the `buku-latihan` directory:
 
 `docker-compose -f local.yml build` to build the images.
 
@@ -19,4 +19,4 @@ After `git clone`, run:
 
 ## Deployment
 
-Somewhere in Heroku. (Relevant docs)[https://cookiecutter-django.readthedocs.io/en/latest/deployment-on-heroku.html#commands-to-run].
+Somewhere in Heroku. [Relevant docs](https://cookiecutter-django.readthedocs.io/en/latest/deployment-on-heroku.html#commands-to-run).
