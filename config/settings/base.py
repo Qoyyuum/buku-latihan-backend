@@ -72,16 +72,16 @@ THIRD_PARTY_APPS = [
     "rest_framework",
     "rest_framework.authtoken",
     "corsheaders",
-    "quiz",
-    "essay",
-    "multichoice",
-    "true_false",
-    # "ckeditor",
 ]
 
 LOCAL_APPS = [
     "buku_latihan.users.apps.UsersConfig",
     # Your stuff: custom apps go here
+    "quiz",
+    "essay",
+    "multichoice",
+    "true_false",
+    # "ckeditor",
 ]
 # https://docs.djangoproject.com/en/dev/ref/settings/#installed-apps
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
