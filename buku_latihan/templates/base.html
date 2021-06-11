@@ -13,7 +13,7 @@
       <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
     <![endif]-->
 
-    <link rel="icon" href="{% static 'images/favicons/favicon.ico' %}">
+    <link rel="icon" href="{{ STATIO_URL }}images/favicons/favicon.ico">
 
     {% block css %}
     <!-- Latest compiled and minified Bootstrap CSS -->
@@ -21,7 +21,7 @@
 
     <!-- Your stuff: Third-party CSS libraries go here -->{% compress css %}
     <!-- This file stores project-specific CSS -->
-    <link href="{% static 'css/project.css' %}" rel="stylesheet">{% endcompress %}
+    <link href="{{ STATIC_URL }}css/project.css" rel="stylesheet">{% endcompress %}
     {% endblock %}
     <!-- Le javascript
     ================================================== -->
@@ -35,7 +35,7 @@
       <!-- Your stuff: Third-party javascript libraries go here -->
 
       <!-- place project specific Javascript in this file -->{% compress js %}
-      <script defer src="{% static 'js/project.js' %}"></script>{% endcompress %}
+      <script defer src="{{ STATIC_URL }}js/project.js"></script>{% endcompress %}
 
     {% endblock javascript %}
 
