@@ -1,0 +1,16 @@
+name: Greetings
+
+on: [pull_request, issues]
+
+jobs:
+  greeting:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
+    steps:
+    - uses: actions/first-interaction@v1
+      with:
+        repo-token: ${{ secrets.GITHUB_TOKEN }}
+        issue-message: 'Please state what problem you faced, how you get that problem, and what you expect should happen. Providing these details will help us reproduce the problem and fix it.'
+        pr-message: 'Please refer an issue number for the fix and a brief of how its fixed.'
