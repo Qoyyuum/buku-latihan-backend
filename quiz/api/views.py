@@ -19,7 +19,7 @@ class CategoryViewSet(RetrieveModelMixin, ListModelMixin, GenericViewSet):
 
 	def get(self, request, *args, **kwargs):
 		return self.list(request, *args, **kwargs)
-	
+
 class SubCategoryViewSet(RetrieveModelMixin, ListModelMixin, GenericViewSet):
 	queryset = SubCategory.objects.all()
 	serializer_class = SubCategorySerializer
@@ -30,11 +30,11 @@ class SubCategoryViewSet(RetrieveModelMixin, ListModelMixin, GenericViewSet):
 
 class QuestionViewSet(RetrieveModelMixin, ListModelMixin, GenericViewSet):
 	queryset = Question.objects.all()
-	serializer_class = QuestionSerializer 
+	serializer_class = QuestionSerializer
 
 	def get(self, request, *args, **kwargs):
 		return self.list(request, *args, **kwargs)
-		
+
 class ProgressViewSet(RetrieveModelMixin, CreateModelMixin, ListModelMixin, GenericViewSet):
 	queryset = Progress.objects.all()
 	serializer_class = ProgressSerializer
@@ -44,7 +44,7 @@ class ProgressViewSet(RetrieveModelMixin, CreateModelMixin, ListModelMixin, Gene
 
 	def post(self, request, *args, **kwargs):
 		return self.create(request, *args, **kwargs)
-		
+
 class SittingViewSet(RetrieveModelMixin, CreateModelMixin, ListModelMixin, GenericViewSet):
 	queryset = Sitting.objects.all()
 	serializer_class = SittingSerializer
@@ -54,4 +54,3 @@ class SittingViewSet(RetrieveModelMixin, CreateModelMixin, ListModelMixin, Gener
 
 	def post(self, request, *args, **kwargs):
 		return self.create(request, *args, **kwargs)
-		

@@ -1,5 +1,7 @@
 {
 	"python.formatting.provider": "black",
-	"python.linting.pylintEnabled": true,
-	"python.pythonPath": "C:\\Python39\\python.exe"
+	"python.linting.pylintEnabled": false,
+	"python.pythonPath": "C:\\Python39\\python.exe",
+	"python.linting.flake8Enabled": true,
+	"python.linting.enabled": true
 }
