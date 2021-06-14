@@ -44,7 +44,7 @@ class ProgressViewSet(RetrieveModelMixin, CreateModelMixin, ListModelMixin, Gene
 
 	def post(self, request, *args, **kwargs):
 		return self.create(request, *args, **kwargs)
-	
+
 class SittingViewSet(RetrieveModelMixin, CreateModelMixin, ListModelMixin, GenericViewSet):
 	queryset = Sitting.objects.all()
 	serializer_class = SittingSerializer
