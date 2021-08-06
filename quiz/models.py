@@ -13,6 +13,7 @@ from django.utils.timezone import now
 from django.conf import settings
 
 from model_utils.managers import InheritanceManager
+from ckeditor_uploader.fields import RichTextUploadingField
 
 
 class CategoryManager(models.Manager):
@@ -564,16 +565,7 @@ class Question(models.Model):
                                      null=True,
                                      on_delete=models.CASCADE)
 
-    figure = models.ImageField(upload_to='uploads/%Y/%m/%d',
-                               blank=True,
-                               null=True,
-                               verbose_name=_("Figure"))
-
-    content = models.CharField(max_length=1000,
-                               blank=False,
-                               help_text=_("Enter the question text that "
-                                           "you want displayed"),
-                               verbose_name=_('Question'))
+    content = RichTextUploadingField(config_name='default')
 
     explanation = models.TextField(max_length=2000,
                                    blank=True,
