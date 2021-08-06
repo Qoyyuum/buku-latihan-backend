@@ -73,7 +73,7 @@ THIRD_PARTY_APPS = [
     "rest_framework.authtoken",
     "corsheaders",
     "drf_yasg",
-    "ckeditor_uploader"
+    "ckeditor_uploader",
 ]
 
 LOCAL_APPS = [
@@ -84,7 +84,6 @@ LOCAL_APPS = [
     "multichoice",
     "true_false",
     "ckeditor",
-
 ]
 # https://docs.djangoproject.com/en/dev/ref/settings/#installed-apps
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -313,7 +312,7 @@ REST_FRAMEWORK = {
         "rest_framework.authentication.TokenAuthentication",
     ),
     "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
-    "DEFAULT_SCHEMA_CLASS": 'rest_framework.schemas.coreapi.AutoSchema',
+    "DEFAULT_SCHEMA_CLASS": "rest_framework.schemas.coreapi.AutoSchema",
 }
 
 # django-cors-headers - https://github.com/adamchainz/django-cors-headers#setup
@@ -324,8 +323,8 @@ CKEDITOR_UPLOAD_PATH = "uploads/"
 CKEDITOR_CONFIGS = {
     "default": {
         "removePlugins": "stylesheetparser",
-        'toolbar': 'full',
+        "toolbar": "full",
     }
 }
 CKEDITOR_ALLOW_NONIMAGE_FILES = False
-CKEDITOR_IMAGE_BACKEND = 'pillow'
+CKEDITOR_IMAGE_BACKEND = "pillow"

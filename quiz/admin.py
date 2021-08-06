@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Quiz, Question, Progress, Sitting, Category, SubCategory
+from .models import Category, Progress, Question, Quiz, Sitting, SubCategory
 
 admin.site.register(Quiz)
 admin.site.register(Question)
