@@ -5,32 +5,21 @@ from drf_yasg.views import get_schema_view
 from rest_framework import permissions
 from rest_framework.routers import DefaultRouter, SimpleRouter
 
-from quiz.api.views import (
-    CategoryViewSet,
-    ProgressViewSet,
-    QuestionViewSet,
-    QuizViewSet,
-    SittingViewSet,
-    SubCategoryViewSet,
-)
+from multichoice.api.views import AnswerViewSet, MCQuestionViewSet
 
 if settings.DEBUG:
     router = DefaultRouter()
 else:
     router = SimpleRouter()
 
-router.register("quizzes", QuizViewSet)
-router.register("questions", QuestionViewSet)
-router.register("progress", ProgressViewSet)
-router.register("sittings", SittingViewSet)
-router.register("categories", CategoryViewSet)
-router.register("subcategories", SubCategoryViewSet)
+router.register("multichoices", MCQuestionViewSet)
+router.register("answer", AnswerViewSet)
 
 schema_view = get_schema_view(
     openapi.Info(
-        title="Quiz API",
+        title="Multiple Choice Question API",
         default_version="v1",
-        description="Quiz API to get a list of questions and submit answers against",
+        description="MCQ API to get a list of questions and submit answers against",
         terms_of_service="https://buku-latihan.herokuapp.com/",
         contact=openapi.Contact(email="abdul.qoyyuum@gmail.com"),
         license=openapi.License(name="GPLv3 License"),
