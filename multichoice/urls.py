@@ -7,11 +7,7 @@ from rest_framework.routers import DefaultRouter, SimpleRouter
 
 from multichoice.api.views import AnswerViewSet, MCQuestionViewSet
 
-if settings.DEBUG:
-    router = DefaultRouter()
-else:
-    router = SimpleRouter()
-
+router = DefaultRouter() if settings.DEBUG else SimpleRouter()
 router.register("multichoices", MCQuestionViewSet)
 router.register("answer", AnswerViewSet)
 

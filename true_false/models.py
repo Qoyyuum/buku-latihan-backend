@@ -14,17 +14,14 @@ class TF_Question(Question):
                                   verbose_name=_("Correct"))
 
     def check_if_correct(self, guess):
-        if guess == "True":
-            guess_bool = True
-        elif guess == "False":
+        if guess == "False":
             guess_bool = False
+        elif guess == "True":
+            guess_bool = True
         else:
             return False
 
-        if guess_bool == self.correct:
-            return True
-        else:
-            return False
+        return guess_bool == self.correct
 
     def get_answers(self):
         return [{'correct': self.check_if_correct("True"),

@@ -258,11 +258,16 @@ class Progress(models.Model):
         category_test = Category.objects.filter(category=question.category)\
                                         .exists()
 
-        if any([item is False for item in [category_test,
-                                           score_to_add,
-                                           possible_to_add,
-                                           isinstance(score_to_add, int),
-                                           isinstance(possible_to_add, int)]]):
+        if any(
+            item is False
+            for item in [
+                category_test,
+                score_to_add,
+                possible_to_add,
+                isinstance(score_to_add, int),
+                isinstance(possible_to_add, int),
+            ]
+        ):
             return _("error"), _("category does not exist or invalid score")
 
         to_find = re.escape(str(question.category)) +\
@@ -284,8 +289,6 @@ class Progress(models.Model):
 
             # swap old score for the new one
             self.score = self.score.replace(match.group(), new_score)
-            self.save()
-
         else:
             #  if not present but existing, add with the points passed in
             self.score += ",".join(
@@ -295,7 +298,8 @@ class Progress(models.Model):
                     str(possible_to_add),
                     ""
                 ])
-            self.save()
+
+        self.save()
 
     def show_exams(self):
         """
@@ -318,7 +322,7 @@ class SittingManager(models.Manager):
 
         question_set = [item.id for item in question_set]
 
-        if len(question_set) == 0:
+        if not question_set:
             raise ImproperlyConfigured('Question set of the quiz is empty. '
                                        'Please configure questions properly')
 
@@ -327,7 +331,7 @@ class SittingManager(models.Manager):
 
         questions = ",".join(map(str, question_set)) + ","
 
-        new_sitting = self.create(user=user,
+        return self.create(user=user,
                                   quiz=quiz,
                                   question_order=questions,
                                   question_list=questions,
@@ -335,7 +339,6 @@ class SittingManager(models.Manager):
                                   current_score=0,
                                   complete=False,
                                   user_answers='{}')
-        return new_sitting
 
     def user_sitting(self, user, quiz):
         if quiz.single_attempt is True and self.filter(user=user,
