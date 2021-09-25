@@ -30,10 +30,7 @@ class MCQuestion(Question):
     def check_if_correct(self, guess):
         answer = Answer.objects.get(id=guess)
 
-        if answer.correct is True:
-            return True
-        else:
-            return False
+        return answer.correct is True
 
     def order_answers(self, queryset):
         if self.answer_order == "content":

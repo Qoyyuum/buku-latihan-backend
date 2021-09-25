@@ -14,11 +14,7 @@ from quiz.api.views import (
     SubCategoryViewSet,
 )
 
-if settings.DEBUG:
-    router = DefaultRouter()
-else:
-    router = SimpleRouter()
-
+router = DefaultRouter() if settings.DEBUG else SimpleRouter()
 router.register("quizzes", QuizViewSet)
 router.register("questions", QuestionViewSet)
 router.register("progress", ProgressViewSet)
