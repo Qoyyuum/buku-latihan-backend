@@ -96,7 +96,7 @@ services:
 
   migrate:
     build:
-      context: ../backend
+      context: ./backend
     environment: *backend-env
     command: python manage.py migrate --noinput
     depends_on:
@@ -107,7 +107,7 @@ services:
   # Serves /api, /admin and /static (whitenoise).
   api:
     build:
-      context: ../backend
+      context: ./backend
     restart: unless-stopped
     expose:
       - "8000"
@@ -137,7 +137,7 @@ services:
 
   worker:
     build:
-      context: ../backend
+      context: ./backend
     restart: unless-stopped
     environment: *backend-env
     command: celery -A config worker -l info --concurrency 2
