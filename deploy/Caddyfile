@@ -1,0 +1,22 @@
+# DOMAIN comes from the compose environment (deploy/.env).
+# "localhost" serves plain HTTP; a real domain gets automatic HTTPS.
+{$DOMAIN}
+
+# Django API, admin, OpenAPI, and whitenoise-served /static.
+handle /api/* {
+	reverse_proxy api:8000
+}
+handle /admin/* {
+	reverse_proxy api:8000
+}
+handle /static/* {
+	reverse_proxy api:8000
+}
+
+# Expo static export — SPA with client-side routing.
+handle {
+	root * /srv/frontend
+	encode gzip
+	try_files {path} /index.html
+	file_server
+}

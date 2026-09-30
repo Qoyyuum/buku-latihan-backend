@@ -1,0 +1,25 @@
+site_name: Buku Latihan
+site_description: >-
+  Worksheet practice LMS — students answer past-year papers and exercises
+  with a stylus, teachers mark with AI assistance.
+repo_url: https://github.com/Qoyyuum/buku-latihan-backend
+
+theme:
+  name: readthedocs
+
+nav:
+  - Overview: index.md
+  - Architecture: architecture.md
+  - Local setup: setup.md
+  - API: api.md
+  - Frontend app: frontend.md
+  - Grading pipeline: grading.md
+  - Storage: storage.md
+  - Deployment: deployment.md
+  - Development & checks: development.md
+
+markdown_extensions:
+  - admonition
+  - codehilite
+  - toc:
+      permalink: true
