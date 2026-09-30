@@ -6,7 +6,9 @@ services:
   db:
     image: docker.io/postgres:18-alpine
     ports:
-      - "5432:5432"
+      # host PGPORT (default 15432) -> container 5432. 5432 is frequently
+      # inside Windows' reserved port ranges; match DATABASE_URL to this.
+      - "${PGPORT:-16432}:5432"
     environment:
       POSTGRES_DB: buku
       POSTGRES_USER: buku
@@ -20,7 +22,7 @@ services:
       - "6379:6379"
 
   minio:
-    image: quay.io/minio/minio:latest
+    image: docker.io/elestio/minio:latest
     ports:
       - "9000:9000"
       - "9001:9001"
