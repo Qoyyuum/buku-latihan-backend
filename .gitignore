@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.pytest_cache/
+.ruff_cache/
+.ty/
+.coverage
+htmlcov/
+db.sqlite3
+media/
+staticfiles/
+
+# Node / Expo
+node_modules/
+dist/
+web-build/
+.expo/
+*.log
+
+# Env / secrets
+.env
+.envs/.local/
+.envs/.production/
+!.envs/.local/example.*
+!.envs/.production/example.*
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

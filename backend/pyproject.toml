@@ -1,0 +1,83 @@
+[project]
+name = "backend"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "boto3>=1.43.105",
+    "celery[redis]>=5.6.3",
+    "django>=6.1.1",
+    "django-cors-headers>=4.9.0",
+    "django-environ>=0.14.0",
+    "django-storages>=1.14.6",
+    "djangorestframework>=3.18.1",
+    "djangorestframework-simplejwt>=5.5.1",
+    "drf-spectacular>=0.30.0",
+    "gunicorn>=26.2.0",
+    "httpx>=0.28.1",
+    "pillow>=12.3.0",
+    "psycopg>=3.3.6",
+    "pypdfium2>=5.13.0",
+    "pytest-django>=4.14.0",
+    "redis>=6.4.0",
+]
+
+[dependency-groups]
+dev = [
+    "coverage>=7.16.2",
+    "django-stubs>=6.1.1",
+    "djangorestframework-stubs>=3.18.1",
+    "factory-boy>=3.3.3",
+    "ruff>=0.16.9",
+    "ty>=0.0.84",
+]
+
+[tool.uv]
+package = false
+
+[tool.ruff]
+target-version = "py314"
+line-length = 88
+src = ["."]
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes
+    "I",    # isort
+    "B",    # flake8-bugbear
+    "C4",   # flake8-comprehensions
+    "UP",   # pyupgrade
+    "ARG",  # unused arguments
+    "S",    # bandit
+    "DJ",   # django
+    "RUF",
+]
+ignore = [
+    "S101",   # asserts are fine in tests
+    "ARG002", # DRF viewset signature args
+    "RUF012", # Django/DRF rely on mutable class attributes (Meta, list_display, permission_classes)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"**/migrations/**" = ["E501", "DJ001", "RUF012"]
+"**/tests/**" = ["ARG", "S106"]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings.test"
+python_files = ["test_*.py", "*_test.py", "tests.py"]
+testpaths = ["apps"]
+
+[tool.coverage.run]
+source = ["apps", "config"]
+omit = ["*/migrations/*", "*/tests/*"]
+
+[tool.ty.src]
+include = ["apps", "config", "manage.py"]
+exclude = ["**/migrations/**"]
+
+[tool.ty.environment]
+python-version = "3.14"
+python = ".venv"
