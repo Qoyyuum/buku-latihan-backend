@@ -1,6 +1,7 @@
 import io
 import json
 import logging
+from typing import Any
 
 from celery import shared_task
 from django.utils import timezone
@@ -94,13 +95,33 @@ def grade_attempt(self, attempt_id: int) -> None:
             attempt.worksheet.title, answer_notes, all_answers
         )
 
-        scores = [
-            d.get("score", 0)
-            for d in (decisions.get("decisions") or {}).values()
-            if isinstance(d, dict) and d.get("score") is not None
-        ]
-        total = sum(float(s) for s in scores)
+        # Jev score answers: probability-weighted position 0..SCORE_LEVEL_MAX,
+        # normalised to a 0-10 mark per question.
+        per_q: dict[str, dict[str, Any]] = {}
+        scores: list[float] = []
+        confidences: list[float] = []
+        for qid, d in (decisions.get("answers") or {}).items():
+            if not isinstance(d, dict) or d.get("score") is None:
+                continue
+            norm = float(d["score"]) * 10.0 / openrouter.SCORE_LEVEL_MAX
+            scores.append(norm)
+            per_q[qid] = {
+                "score": round(norm, 2),
+                "confidence": d.get("confidence"),
+            }
+            if d.get("confidence") is not None:
+                confidences.append(float(d["confidence"]))
+        total = sum(scores)
         max_total = 10.0 * len(scores) if scores else 0.0
+        mean_conf = (
+            round(sum(confidences) / len(confidences), 2) if confidences else None
+        )
+        feedback = (
+            f"AI-suggested marks — mean confidence {mean_conf:.0%}. "
+            "Please review before returning."
+            if mean_conf is not None
+            else "AI-suggested marks. Please review before returning."
+        )
 
         job.transcript = transcripts
         job.decisions = decisions
@@ -113,8 +134,8 @@ def grade_attempt(self, attempt_id: int) -> None:
             defaults={
                 "score": total,
                 "max_score": max_total,
-                "per_page": {str(i): s for i, s in enumerate(scores)},
-                "feedback": decisions.get("summary", ""),
+                "per_page": per_q,
+                "feedback": feedback,
                 "auto_suggested": True,
             },
         )

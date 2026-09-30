@@ -90,15 +90,29 @@ def transcribe_page(
     return result
 
 
+# Ordered score levels for the Jev `score` primitive. The API returns a
+# probability-weighted position in [0, len(levels) - 1].
+SCORE_LEVELS = [
+    "Blank, missing, or completely wrong",
+    "Mostly wrong or a fundamental misunderstanding",
+    "Partially correct",
+    "Mostly correct with minor errors",
+    "Fully correct",
+]
+SCORE_LEVEL_MAX = len(SCORE_LEVELS) - 1
+
+
 def grade_answers(
     worksheet_title: str,
     answer_key_notes: str,
     answers: list[dict[str, Any]],
 ) -> dict[str, Any]:
     """
-    Jev decision model → typed score (0-10) per transcribed answer.
+    Jev decision model → typed score per transcribed answer.
 
     One Decisions-API request carries all questions about the same state.
+    Response shape: {"answers": {qid: {"type": "score", "score": 0-4,
+    "confidence": 0-1, "probabilities": {...}, "legend": {...}}}, ...}.
     """
     state = {
         "worksheet": worksheet_title,
@@ -107,17 +121,17 @@ def grade_answers(
         ),
         "student_answers": answers,
     }
-    questions = [
-        {
-            "id": str(i),
+    questions = {
+        str(i): {
             "type": "score",
-            "question": (
-                f"Score the student's answer to {a.get('question', i)} "
-                "out of 10 against the marking scheme."
+            "instructions": (
+                f"Score the student's answer to question "
+                f"{a.get('question', i)} against the marking scheme."
             ),
+            "criteria": SCORE_LEVELS,
         }
         for i, a in enumerate(answers)
-    ]
+    }
 
     payload = {
         "model": settings.OPENROUTER_GRADE_MODEL,

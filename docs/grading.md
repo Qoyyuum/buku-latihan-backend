@@ -16,9 +16,9 @@ PageSubmission strokes ──► composite ink onto page PNG (PIL)
         └──────────────► stage 2: JEV decision grading
                        model: typesafe/jev-1.13 (text-only, ~200 ms)
                        input: worksheet title + answer-sheet notes +
-                              transcribed answers
-                       output: typed decisions {score, probability}
-                               per question + summary
+                              transcribed answers  (POST /api/alpha/decisions)
+                       output: typed Score answers — weighted position on a
+                               5-level scale + confidence, per question
                                │
                                ▼
                    Mark(auto_suggested=True) + GradeJob(done)
