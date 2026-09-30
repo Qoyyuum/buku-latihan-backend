@@ -1,0 +1,154 @@
+# Coolify production stack — deploy as a "Docker Compose" resource.
+#   Repository: this repo | Branch: prod | Compose file: deploy/compose.coolify.yaml
+#
+# All configuration comes from the Coolify dashboard's environment variables
+# (see deploy/.env.coolify.example). No .env file is read inside the stack.
+#
+# Domains to assign in the Coolify UI:
+#   api   -> your public API domain   (e.g. api.example.com)
+#   minio -> a public storage domain  (e.g. s3.example.com) — REQUIRED, because
+#            the API hands presigned URLs straight to students' apps.
+# No Caddy here: Coolify's proxy terminates TLS and routes to the services.
+name: buku-latihan
+
+x-backend-env: &backend-env
+  DJANGO_SETTINGS_MODULE: config.settings.production
+  DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-change-me}
+  DJANGO_DEBUG: ${DJANGO_DEBUG:-False}
+  DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-api.example.com}
+  CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS:-https://api.example.com}
+  CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-https://app.example.com}
+  DATABASE_URL: ${DATABASE_URL:-postgres://${POSTGRES_USER:-buku}:${POSTGRES_PASSWORD:-change-me}@db:5432/${POSTGRES_DB:-buku}}
+  CELERY_BROKER_URL: ${CELERY_BROKER_URL:-redis://redis:6379/0}
+  CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND:-redis://redis:6379/0}
+  AWS_S3_ENDPOINT_URL: ${AWS_S3_ENDPOINT_URL:-https://s3.example.com}
+  AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-${MINIO_ROOT_USER:-minioadmin}}
+  AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-${MINIO_ROOT_PASSWORD:-change-me}}
+  AWS_STORAGE_BUCKET_NAME: ${AWS_STORAGE_BUCKET_NAME:-buku-latihan-media}
+  AWS_S3_REGION_NAME: ${AWS_S3_REGION_NAME:-auto}
+  OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-change-me}
+  OPENROUTER_BASE_URL: ${OPENROUTER_BASE_URL:-https://openrouter.ai/api}
+  OPENROUTER_TRANSCRIBE_MODEL: ${OPENROUTER_TRANSCRIBE_MODEL:-openrouter/free}
+  OPENROUTER_GRADE_MODEL: ${OPENROUTER_GRADE_MODEL:-typesafe/jev-1.13}
+  OPENROUTER_HTTP_REFERER: ${OPENROUTER_HTTP_REFERER:-}
+  OPENROUTER_APP_NAME: ${OPENROUTER_APP_NAME:-buku-latihan}
+
+services:
+  db:
+    image: docker.io/postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-buku}
+      POSTGRES_USER: ${POSTGRES_USER:-buku}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me}
+    volumes:
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  redis:
+    image: docker.io/redis:7-alpine
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  # Public object storage — clients download/upload via presigned URLs, so
+  # AWS_S3_ENDPOINT_URL must match the domain Coolify assigns to this service.
+  minio:
+    image: docker.io/minio/minio:latest
+    restart: unless-stopped
+    expose:
+      - "9000"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-change-me}
+    command: server /data --console-address ":9001"
+    volumes:
+      - miniodata:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  # One-shot: create the media bucket, then exit. Mirrors `migrate`.
+  minio-init:
+    image: docker.io/minio/mc:latest
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-change-me}
+      AWS_STORAGE_BUCKET_NAME: ${AWS_STORAGE_BUCKET_NAME:-buku-latihan-media}
+    entrypoint:
+      [
+        "sh",
+        "-c",
+        "mc alias set local http://minio:9000 \"$${MINIO_ROOT_USER}\" \"$${MINIO_ROOT_PASSWORD}\" && mc mb --ignore-existing \"local/$${AWS_STORAGE_BUCKET_NAME}\"",
+      ]
+    depends_on:
+      minio:
+        condition: service_healthy
+
+  migrate:
+    build:
+      context: ../backend
+    environment: *backend-env
+    command: python manage.py migrate --noinput
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # Public: assign the API domain to this service in Coolify (port 8000).
+  # Serves /api, /admin and /static (whitenoise).
+  api:
+    build:
+      context: ../backend
+    restart: unless-stopped
+    expose:
+      - "8000"
+    environment: *backend-env
+    command:
+      [
+        "sh",
+        "-c",
+        "python manage.py collectstatic --noinput && exec gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 3 --timeout 120",
+      ]
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "python -c \"import socket; socket.create_connection(('localhost', 8000), 5)\"",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      minio-init:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+
+  worker:
+    build:
+      context: ../backend
+    restart: unless-stopped
+    environment: *backend-env
+    command: celery -A config worker -l info --concurrency 2
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      minio-init:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+
+volumes:
+  pgdata:
+  miniodata:

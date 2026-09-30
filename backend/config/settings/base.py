@@ -134,6 +134,12 @@ CORS_ALLOWED_ORIGINS: list[str] = env.list(
     default=["http://localhost:8081", "http://127.0.0.1:8081"],
 )
 
+# Required for admin/forms over HTTPS behind a reverse proxy.
+CSRF_TRUSTED_ORIGINS: list[str] = env.list(
+    "CSRF_TRUSTED_ORIGINS",
+    default=["http://localhost:8081", "http://127.0.0.1:8081"],
+)
+
 # ------------------------------------------------------------------------------
 # DRF
 # ------------------------------------------------------------------------------
