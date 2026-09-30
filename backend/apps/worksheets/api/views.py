@@ -39,6 +39,9 @@ class WorksheetViewSet(viewsets.ModelViewSet):
         qs = Worksheet.objects.select_related(
             "subject", "topic", "created_by"
         ).prefetch_related("pages", "answer_sheets")
+        subject_id = self.request.query_params.get("subject")
+        if subject_id:
+            qs = qs.filter(subject_id=subject_id)
         user = self.request.user
         if isinstance(user, User) and user.role in {
             UserRole.ADMIN,

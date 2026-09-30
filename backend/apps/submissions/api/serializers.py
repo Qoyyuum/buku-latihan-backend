@@ -3,6 +3,7 @@ from typing import Any
 from rest_framework import serializers
 
 from apps.accounts.api.serializers import UserSerializer
+from apps.common import storage
 from apps.submissions.models import (
     Attempt,
     AttemptStatus,
@@ -15,6 +16,8 @@ from apps.worksheets.models import Worksheet, WorksheetPage, WorksheetStatus
 
 
 class PageSubmissionSerializer(serializers.ModelSerializer[PageSubmission]):
+    url = serializers.SerializerMethodField()
+
     class Meta:
         model = PageSubmission
         fields = [
@@ -22,9 +25,16 @@ class PageSubmissionSerializer(serializers.ModelSerializer[PageSubmission]):
             "worksheet_page",
             "strokes_key",
             "image_key",
+            "url",
             "uploaded_at",
         ]
-        read_only_fields = ["id", "image_key", "uploaded_at"]
+        read_only_fields = ["id", "strokes_key", "image_key", "url", "uploaded_at"]
+
+    def get_url(self, obj: PageSubmission) -> str | None:
+        """Signed GET for the composited page image, once grading renders it."""
+        if not obj.image_key:
+            return None
+        return storage.presign_get(obj.image_key)
 
 
 class StrokeUploadSerializer(serializers.Serializer[Any]):
