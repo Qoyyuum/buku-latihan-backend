@@ -1,0 +1,18 @@
+{
+  "name": "buku-latihan-portal",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview"
+  },
+  "dependencies": {
+    "astro": "7.3.5",
+    "qrcode": "1.5.4"
+  },
+  "devDependencies": {
+    "@types/qrcode": "1.5.5"
+  }
+}

@@ -9,6 +9,7 @@ from datetime import timedelta
 from pathlib import Path
 
 import environ
+from corsheaders.defaults import default_headers
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
@@ -42,6 +43,10 @@ DJANGO_APPS = [
     "django.contrib.staticfiles",
 ]
 THIRD_PARTY_APPS = [
+    "allauth",
+    "allauth.account",
+    "allauth.headless",
+    "allauth.mfa",
     "corsheaders",
     "rest_framework",
     "rest_framework_simplejwt",
@@ -68,6 +73,7 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "allauth.account.middleware.AccountMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
@@ -131,13 +137,24 @@ MEDIA_ROOT = BASE_DIR / "media"
 # ------------------------------------------------------------------------------
 CORS_ALLOWED_ORIGINS: list[str] = env.list(
     "CORS_ALLOWED_ORIGINS",
-    default=["http://localhost:8081", "http://127.0.0.1:8081"],
+    default=[
+        "http://localhost:8081",
+        "http://127.0.0.1:8081",
+        "http://localhost:4321",
+        "http://127.0.0.1:4321",
+    ],
 )
+CORS_ALLOW_HEADERS = [*default_headers, "x-session-token"]
 
 # Required for admin/forms over HTTPS behind a reverse proxy.
 CSRF_TRUSTED_ORIGINS: list[str] = env.list(
     "CSRF_TRUSTED_ORIGINS",
-    default=["http://localhost:8081", "http://127.0.0.1:8081"],
+    default=[
+        "http://localhost:8081",
+        "http://127.0.0.1:8081",
+        "http://localhost:4321",
+        "http://127.0.0.1:4321",
+    ],
 )
 
 # ------------------------------------------------------------------------------
@@ -146,6 +163,7 @@ CSRF_TRUSTED_ORIGINS: list[str] = env.list(
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "rest_framework_simplejwt.authentication.JWTAuthentication",
+        "allauth.headless.contrib.rest_framework.authentication.XSessionTokenAuthentication",
     ],
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticated",
@@ -153,6 +171,9 @@ REST_FRAMEWORK = {
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 50,
+    "DEFAULT_THROTTLE_RATES": {
+        "delete_me": "5/minute",
+    },
 }
 
 SIMPLE_JWT = {
@@ -169,6 +190,46 @@ SPECTACULAR_SETTINGS = {
     "VERSION": "0.1.0",
     "SERVE_INCLUDE_SCHEMA": False,
 }
+
+# ------------------------------------------------------------------------------
+# django-allauth (headless account portal auth)
+# ------------------------------------------------------------------------------
+FRONTEND_BASE_URL = env("FRONTEND_BASE_URL", default="http://localhost:4321")
+
+ACCOUNT_LOGIN_METHODS = {"username", "email"}
+ACCOUNT_SIGNUP_FIELDS = ["email*", "username*", "password1*", "password2*"]
+ACCOUNT_EMAIL_VERIFICATION = env(
+    "ACCOUNT_EMAIL_VERIFICATION", default="mandatory"
+)
+ACCOUNT_ADAPTER = "apps.accounts.adapters.AccountAdapter"
+ACCOUNT_RATE_LIMITS = {
+    "login_failed": "10/m/ip,5/5m/key",
+}
+ACCOUNT_SIGNUP_FORM_CLASS = "apps.accounts.forms.RoleSignupForm"
+
+HEADLESS_CLIENTS = ["app"]
+HEADLESS_ONLY = True
+HEADLESS_FRONTEND_URLS = {
+    "account_confirm_email": f"{FRONTEND_BASE_URL}/verify-email?key={{key}}",
+    "account_reset_password_from_key": (
+        f"{FRONTEND_BASE_URL}/reset-password?key={{key}}"
+    ),
+    "account_signup": f"{FRONTEND_BASE_URL}/signup",
+}
+
+# ------------------------------------------------------------------------------
+# Email — console locally, SMTP via env in production
+# ------------------------------------------------------------------------------
+EMAIL_BACKEND = env(
+    "EMAIL_BACKEND",
+    default="django.core.mail.backends.smtp.EmailBackend",
+)
+EMAIL_HOST = env("EMAIL_HOST", default="")
+EMAIL_PORT = env.int("EMAIL_PORT", default=587)
+EMAIL_HOST_USER = env("EMAIL_HOST_USER", default="")
+EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", default="")
+EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS", default=True)
+DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="noreply@bukulatihan.app")
 
 # ------------------------------------------------------------------------------
 # Celery

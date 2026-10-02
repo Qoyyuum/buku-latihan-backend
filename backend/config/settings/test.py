@@ -11,6 +11,9 @@ DATABASES = {
 
 PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
 
+ACCOUNT_EMAIL_VERIFICATION = "none"
+EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
+
 CELERY_TASK_ALWAYS_EAGER = True
 CELERY_TASK_EAGER_PROPAGATES = True
 

@@ -1,0 +1,247 @@
+---
+import Base from "../layouts/Base.astro";
+---
+
+<Base title="Account">
+  <h1>Account settings</h1>
+  <div id="msg"></div>
+  <p class="muted"><a href="#" id="logout">Log out</a></p>
+
+  <div class="card">
+    <h2>Change password</h2>
+    <form id="pw-form" class="stack">
+      <label>
+        Current password
+        <input
+          name="current_password"
+          type="password"
+          required
+          autocomplete="current-password"
+        />
+      </label>
+      <label>
+        New password
+        <input
+          name="new_password"
+          type="password"
+          required
+          autocomplete="new-password"
+        />
+      </label>
+      <button class="btn" type="submit">Change password</button>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2>Two-factor authentication</h2>
+    <div id="totp-status"><p class="muted">Checking…</p></div>
+
+    <div id="totp-setup" hidden>
+      <p class="muted">
+        Scan this QR code with your authenticator app, or enter the secret
+        manually, then submit the 6-digit code.
+      </p>
+      <canvas id="totp-qr"></canvas>
+      <p><code id="totp-secret"></code></p>
+      <form id="totp-activate" class="stack">
+        <label>
+          Code
+          <input name="code" type="text" inputmode="numeric" required />
+        </label>
+        <button class="btn" type="submit">Activate 2FA</button>
+      </form>
+    </div>
+
+    <div id="totp-enabled" hidden>
+      <p class="muted">Two-factor authentication is <strong>on</strong>.</p>
+      <form id="totp-deactivate" class="stack">
+        <button class="btn danger" type="submit">Deactivate 2FA</button>
+      </form>
+      <form id="rc-form" class="stack">
+        <button class="btn" type="submit">Generate recovery codes</button>
+      </form>
+      <pre id="rc-list" class="card" hidden></pre>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2 class="danger">Delete account</h2>
+    <p class="muted">
+      Permanently deletes your account, enrollments, and submitted work. This
+      cannot be undone.
+    </p>
+    <form id="delete-form" class="stack">
+      <label>
+        Confirm with your password
+        <input
+          name="password"
+          type="password"
+          required
+          autocomplete="current-password"
+        />
+      </label>
+      <button class="btn danger" type="submit">Delete my account</button>
+    </form>
+  </div>
+
+  <script>
+    import QRCode from "qrcode";
+    import {
+      apiFetch,
+      headlessFetch,
+      post,
+      requireAuth,
+      logout,
+      setToken,
+      errorMessage,
+    } from "../lib/api";
+
+    requireAuth();
+
+    const msg = document.getElementById("msg")!;
+    const show = (text: string, ok = false) => {
+      msg.innerHTML = `<div class="alert ${ok ? "ok" : "error"}">${text}</div>`;
+    };
+    const $ = (id: string) => document.getElementById(id) as HTMLElement;
+
+    $("logout").addEventListener("click", async (e) => {
+      e.preventDefault();
+      await logout();
+      window.location.href = "/";
+    });
+
+    // ---- Change password ----
+    document
+      .getElementById("pw-form")!
+      .addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const f = e.target as HTMLFormElement;
+        const res = await post("/account/password/change", {
+          current_password: f.current_password.value,
+          new_password: f.new_password.value,
+        });
+        const data = await res.json();
+        res.ok ? (show("Password changed.", true), f.reset()) : show(errorMessage(data));
+      });
+
+    // ---- TOTP ----
+    async function refreshTotp() {
+      const res = await headlessFetch("/account/authenticators/totp");
+      const status = $("totp-status");
+      if (res.status === 200) {
+        status.innerHTML = "";
+        $("totp-enabled").hidden = false;
+        $("totp-setup").hidden = true;
+      } else if (res.status === 404) {
+        status.innerHTML =
+          '<p class="muted">2FA is off. Set it up below.</p>';
+        $("totp-enabled").hidden = true;
+        $("totp-setup").hidden = false;
+        setupTotp();
+      } else {
+        status.innerHTML =
+          '<p class="muted">Could not load 2FA status.</p>';
+      }
+    }
+
+    let setupDone = false;
+    async function setupTotp() {
+      if (setupDone) return;
+      setupDone = true;
+      const res = await post("/account/authenticators/totp", {});
+      if (!res.ok) return;
+      const data = await res.json();
+      const totp = data.data ?? data;
+      const secret = totp.secret ?? totp.totp?.secret;
+      const url = totp.totp_url ?? totp.totp?.totp_url;
+      if (secret) $("totp-secret").textContent = secret;
+      if (url) {
+        QRCode.toCanvas($("totp-qr") as HTMLCanvasElement, url, {
+          width: 180,
+        });
+      }
+    }
+
+    document
+      .getElementById("totp-activate")!
+      .addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const f = e.target as HTMLFormElement;
+        const res = await post("/account/authenticators/totp", {
+          code: f.code.value,
+        });
+        const data = await res.json().catch(() => null);
+        if (res.ok) {
+          show("Two-factor authentication enabled.", true);
+          setupDone = false;
+          await refreshTotp();
+        } else {
+          show(errorMessage(data));
+        }
+      });
+
+    document
+      .getElementById("totp-deactivate")!
+      .addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const res = await headlessFetch("/account/authenticators/totp", {
+          method: "DELETE",
+        });
+        if (res.ok) {
+          show("Two-factor authentication disabled.", true);
+          setupDone = false;
+          await refreshTotp();
+        } else {
+          show("Could not deactivate 2FA.");
+        }
+      });
+
+    document
+      .getElementById("rc-form")!
+      .addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const res = await post(
+          "/account/authenticators/recovery-codes",
+          {},
+        );
+        const data = await res.json().catch(() => null);
+        const codes =
+          data?.data?.unused_codes ?? data?.unused_codes ?? data?.data;
+        const list = $("rc-list") as HTMLElement;
+        if (res.ok && Array.isArray(codes)) {
+          list.textContent = codes.join("\n");
+          list.hidden = false;
+        } else {
+          show("Could not generate recovery codes.");
+        }
+      });
+
+    refreshTotp();
+
+    // ---- Delete account ----
+    document
+      .getElementById("delete-form")!
+      .addEventListener("submit", async (e) => {
+        e.preventDefault();
+        if (
+          !confirm(
+            "Delete your account permanently? This cannot be undone.",
+          )
+        )
+          return;
+        const f = e.target as HTMLFormElement;
+        const res = await apiFetch("/api/v1/users/me/", {
+          method: "DELETE",
+          body: JSON.stringify({ password: f.password.value }),
+        });
+        if (res.status === 204) {
+          setToken(null);
+          document.querySelector("main .container")!.innerHTML =
+            '<h1>Account deleted</h1><p>Your account and data have been permanently removed.</p><p><a class="btn" href="/">Back to home</a></p>';
+        } else {
+          const data = await res.json().catch(() => null);
+          show(data?.detail ?? "Could not delete account.");
+        }
+      });
+  </script>
+</Base>

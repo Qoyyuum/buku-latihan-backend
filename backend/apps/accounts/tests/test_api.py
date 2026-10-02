@@ -54,3 +54,54 @@ def test_teacher_sees_only_their_students(
     assert res.status_code == 200
     usernames = {u["username"] for u in res.json()["results"]}
     assert usernames == {"student"}
+
+
+@pytest.mark.django_db
+def test_delete_me_wrong_password(client: APIClient, student: User) -> None:
+    client.force_authenticate(student)
+    res = client.delete("/api/v1/users/me/", {"password": "nope"}, format="json")
+    assert res.status_code == 400
+    assert User.objects.filter(pk=student.pk).exists()
+
+
+@pytest.mark.django_db
+def test_delete_me_missing_password(client: APIClient, student: User) -> None:
+    client.force_authenticate(student)
+    res = client.delete("/api/v1/users/me/", {}, format="json")
+    assert res.status_code == 400
+    assert User.objects.filter(pk=student.pk).exists()
+
+
+@pytest.mark.django_db
+def test_delete_me_success_cascades(
+    client: APIClient, teacher: User, student: User
+) -> None:
+    classroom = Classroom.objects.create(name="C", teacher=teacher)
+    Enrollment.objects.create(student=student, classroom=classroom)
+    client.force_authenticate(student)
+    res = client.delete("/api/v1/users/me/", {"password": "pw"}, format="json")
+    assert res.status_code == 204
+    assert not User.objects.filter(pk=student.pk).exists()
+    assert not Enrollment.objects.filter(student_id=student.pk).exists()
+    assert Classroom.objects.filter(pk=classroom.pk).exists()
+    assert User.objects.filter(pk=teacher.pk).exists()
+
+
+@pytest.mark.django_db
+def test_delete_me_unauthenticated(client: APIClient) -> None:
+    assert client.delete("/api/v1/users/me/").status_code == 401
+
+
+@pytest.mark.django_db
+def test_delete_me_rate_limited(client: APIClient, student: User) -> None:
+    from django.core.cache import cache
+
+    cache.clear()  # throttle buckets persist across tests sharing pk=1
+    client.force_authenticate(student)
+    for _ in range(5):
+        res = client.delete(
+            "/api/v1/users/me/", {"password": "nope"}, format="json"
+        )
+        assert res.status_code == 400
+    res = client.delete("/api/v1/users/me/", {"password": "nope"}, format="json")
+    assert res.status_code == 429
