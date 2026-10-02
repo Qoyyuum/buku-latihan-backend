@@ -65,32 +65,34 @@ Everything runs on one small VPS (≥1 GB RAM — no local LLM needed) via
 ## Coolify
 
 `deploy/compose.coolify.yaml` deploys **backend only** — Postgres, Redis,
-MinIO, migrate, api (gunicorn+whitenoise) and the Celery worker. Coolify's
-own proxy terminates TLS, so there is no Caddy and no `DOMAIN` variable.
+migrate, api (gunicorn+whitenoise) and the Celery worker. Media lives in
+Cloudflare R2, whose S3 endpoint is already public for the presigned URLs
+handed to clients. Coolify's own proxy terminates TLS, so there is no
+Caddy and no `DOMAIN` variable.
 
-1. In Coolify: **New Resource → Docker Compose → this repository**, branch
+1. Create the R2 bucket (`buku-latihan-media`) and an R2 API token with
+   **Object Read & Write** scoped to that bucket — Cloudflare dashboard →
+   R2 → Manage API Tokens. The token's **Access Key ID** and **Secret
+   Access Key** become `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY`.
+2. In Coolify: **New Resource → Docker Compose → this repository**, branch
    `prod`, compose file `deploy/compose.coolify.yaml`.
-2. Assign domains in the Coolify UI:
+3. Assign a domain in the Coolify UI:
    - `api` → e.g. `api.example.com` (port 8000 — serves `/api`, `/admin`,
      `/static`)
-   - `minio` → e.g. `s3.example.com` (port 9000 — **required public**:
-     presigned URLs go straight to clients)
-3. Set the environment variables in the Coolify dashboard — see
+4. Set the environment variables in the Coolify dashboard — see
    `deploy/.env.coolify.example` for the full list. Every variable has a
    default in the compose file; secrets ship as `change-me` placeholders
    you must replace (`DJANGO_SECRET_KEY`, `POSTGRES_PASSWORD`,
-   `MINIO_ROOT_PASSWORD`, `OPENROUTER_API_KEY`) and the domain variables
-   (`DJANGO_ALLOWED_HOSTS`, `CSRF_TRUSTED_ORIGINS`,
-   `CORS_ALLOWED_ORIGINS`, `AWS_S3_ENDPOINT_URL`) must match the FQDNs
-   you assigned.
-4. Deploy. `migrate` runs migrations and `minio-init` creates the media
-   bucket before `api`/`worker` start. Then:
+   `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `OPENROUTER_API_KEY`)
+   and the domain variables (`DJANGO_ALLOWED_HOSTS`,
+   `CSRF_TRUSTED_ORIGINS`, `CORS_ALLOWED_ORIGINS`) must match the FQDNs
+   you assigned. `AWS_S3_ENDPOINT_URL` already defaults to the R2
+   endpoint — only override it for a different account or provider.
+5. Deploy. `migrate` runs migrations before `api`/`worker` start. Then:
    `python manage.py createsuperuser` from the `api` container's terminal
    in Coolify.
 
 Postgres and Redis are compose-internal — never expose their ports.
-MinIO's API (`:9000`) is public for presigned URLs, but its console
-(`:9001`) stays inside the stack.
 
 ## Scaling notes
 

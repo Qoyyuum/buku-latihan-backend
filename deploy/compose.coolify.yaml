@@ -6,9 +6,11 @@
 #
 # Domains to assign in the Coolify UI:
 #   api   -> your public API domain   (e.g. api.example.com)
-#   minio -> a public storage domain  (e.g. s3.example.com) — REQUIRED, because
-#            the API hands presigned URLs straight to students' apps.
 # No Caddy here: Coolify's proxy terminates TLS and routes to the services.
+#
+# Media lives in Cloudflare R2 (bucket buku-latihan-media). The API hands
+# presigned URLs straight to students' apps; R2's S3 endpoint is already
+# public, so no storage service or domain runs inside this stack.
 name: buku-latihan
 
 x-backend-env: &backend-env
@@ -21,9 +23,9 @@ x-backend-env: &backend-env
   DATABASE_URL: ${DATABASE_URL:-postgres://${POSTGRES_USER:-buku}:${POSTGRES_PASSWORD:-change-me}@db:5432/${POSTGRES_DB:-buku}}
   CELERY_BROKER_URL: ${CELERY_BROKER_URL:-redis://redis:6379/0}
   CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND:-redis://redis:6379/0}
-  AWS_S3_ENDPOINT_URL: ${AWS_S3_ENDPOINT_URL:-https://s3.example.com}
-  AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-${MINIO_ROOT_USER:-minioadmin}}
-  AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-${MINIO_ROOT_PASSWORD:-change-me}}
+  AWS_S3_ENDPOINT_URL: ${AWS_S3_ENDPOINT_URL:-https://c5605e27d8dc0a608fa07e50c4737f42.r2.cloudflarestorage.com}
+  AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-change-me}
+  AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-change-me}
   AWS_STORAGE_BUCKET_NAME: ${AWS_STORAGE_BUCKET_NAME:-buku-latihan-media}
   AWS_S3_REGION_NAME: ${AWS_S3_REGION_NAME:-auto}
   OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-change-me}
@@ -57,42 +59,6 @@ services:
       interval: 5s
       timeout: 3s
       retries: 12
-
-  # Public object storage — clients download/upload via presigned URLs, so
-  # AWS_S3_ENDPOINT_URL must match the domain Coolify assigns to this service.
-  minio:
-    image: docker.io/minio/minio:latest
-    restart: unless-stopped
-    expose:
-      - "9000"
-    environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-change-me}
-    command: server /data --console-address ":9001"
-    volumes:
-      - miniodata:/data
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
-      interval: 5s
-      timeout: 3s
-      retries: 12
-
-  # One-shot: create the media bucket, then exit. Mirrors `migrate`.
-  minio-init:
-    image: docker.io/minio/mc:latest
-    environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-change-me}
-      AWS_STORAGE_BUCKET_NAME: ${AWS_STORAGE_BUCKET_NAME:-buku-latihan-media}
-    entrypoint:
-      [
-        "sh",
-        "-c",
-        "mc alias set local http://minio:9000 \"$${MINIO_ROOT_USER}\" \"$${MINIO_ROOT_PASSWORD}\" && mc mb --ignore-existing \"local/$${AWS_STORAGE_BUCKET_NAME}\"",
-      ]
-    depends_on:
-      minio:
-        condition: service_healthy
 
   migrate:
     build:
@@ -130,8 +96,6 @@ services:
     depends_on:
       migrate:
         condition: service_completed_successfully
-      minio-init:
-        condition: service_completed_successfully
       redis:
         condition: service_healthy
 
@@ -144,11 +108,8 @@ services:
     depends_on:
       migrate:
         condition: service_completed_successfully
-      minio-init:
-        condition: service_completed_successfully
       redis:
         condition: service_healthy
 
 volumes:
   pgdata:
-  miniodata:
