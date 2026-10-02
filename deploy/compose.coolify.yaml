@@ -60,17 +60,9 @@ services:
       timeout: 3s
       retries: 12
 
-  migrate:
-    build:
-      context: ./backend
-    environment: *backend-env
-    command: python manage.py migrate --noinput
-    depends_on:
-      db:
-        condition: service_healthy
-
   # Public: assign the API domain to this service in Coolify (port 8000).
-  # Serves /api, /admin and /static (whitenoise).
+  # Serves /api, /admin and /static (whitenoise). The image entrypoint
+  # runs `manage.py migrate` on every container start.
   api:
     build:
       context: ./backend
@@ -94,8 +86,8 @@ services:
       timeout: 5s
       retries: 6
     depends_on:
-      migrate:
-        condition: service_completed_successfully
+      db:
+        condition: service_healthy
       redis:
         condition: service_healthy
 
@@ -106,8 +98,10 @@ services:
     environment: *backend-env
     command: celery -A config worker -l info --concurrency 2
     depends_on:
-      migrate:
-        condition: service_completed_successfully
+      # api is healthy only after its entrypoint finished migrating, so
+      # this also orders worker start after migrations without a race.
+      api:
+        condition: service_healthy
       redis:
         condition: service_healthy
 

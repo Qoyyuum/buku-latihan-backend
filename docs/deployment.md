@@ -55,9 +55,10 @@ Everything runs on one small VPS (≥1 GB RAM — no local LLM needed) via
     podman compose -f deploy/compose.yaml exec api python manage.py createsuperuser
     ```
 
-    The `migrate` service runs `manage.py migrate` before `api`/`worker`
-    start; `api` runs `collectstatic` on boot and serves `/static` through
-    whitenoise.
+    The image entrypoint runs `manage.py migrate` on every container
+    start; `worker` waits for `api` to go healthy so migrations never
+    race. `api` runs `collectstatic` on boot and serves `/static`
+    through whitenoise.
 
 4. **Verify**: `https://<domain>/` (SPA login), `/admin/`,
    `/api/schema/swagger-ui/`.
@@ -65,7 +66,7 @@ Everything runs on one small VPS (≥1 GB RAM — no local LLM needed) via
 ## Coolify
 
 `deploy/compose.coolify.yaml` deploys **backend only** — Postgres, Redis,
-migrate, api (gunicorn+whitenoise) and the Celery worker. Media lives in
+api (gunicorn+whitenoise) and the Celery worker. Media lives in
 Cloudflare R2, whose S3 endpoint is already public for the presigned URLs
 handed to clients. Coolify's own proxy terminates TLS, so there is no
 Caddy and no `DOMAIN` variable.
@@ -88,9 +89,10 @@ Caddy and no `DOMAIN` variable.
    `CSRF_TRUSTED_ORIGINS`, `CORS_ALLOWED_ORIGINS`) must match the FQDNs
    you assigned. `AWS_S3_ENDPOINT_URL` already defaults to the R2
    endpoint — only override it for a different account or provider.
-5. Deploy. `migrate` runs migrations before `api`/`worker` start. Then:
-   `python manage.py createsuperuser` from the `api` container's terminal
-   in Coolify.
+5. Deploy. The image entrypoint runs `manage.py migrate` before
+   gunicorn/celery start (`worker` waits on `api` healthy, so migrations
+   run once, not concurrently). Then: `python manage.py createsuperuser`
+   from the `api` container's terminal in Coolify.
 
 Postgres and Redis are compose-internal — never expose their ports.
 
