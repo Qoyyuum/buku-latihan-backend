@@ -50,10 +50,19 @@ class UserViewSet(
             return [IsTeacher()]
         return [IsAuthenticated()]
 
-    @action(detail=False, methods=["get"])
+    @action(detail=False, methods=["get", "delete"])
     def me(self, request: Request) -> Response:
         if not isinstance(request.user, User):
             return Response(status=401)
+        if request.method == "DELETE":
+            password = request.data.get("password")
+            if not password or not request.user.check_password(password):
+                return Response(
+                    {"detail": "Incorrect password."},
+                    status=400,
+                )
+            request.user.delete()
+            return Response(status=204)
         return Response(UserSerializer(request.user).data)
 
 
