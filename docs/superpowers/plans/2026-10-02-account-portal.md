@@ -4,7 +4,7 @@
 
 **Goal:** Public Astro marketing/account site on Cloudflare Pages plus the backend account-management API (allauth headless) it consumes, satisfying Google Play's account-deletion requirement.
 
-**Architecture:** `django-allauth` headless mode (`app` client, session-token auth via `X-Session-Token`) mounted at `_allauth/` provides signup/login/reset/change/TOTP; one custom DRF endpoint `DELETE /api/v1/users/me/` handles deletion. A static Astro site in `site/` talks to it via `fetch`.
+**Architecture:** `django-allauth` headless mode (`app` client, session-token auth via `X-Session-Token`) mounted at `_allauth/` provides signup/login/reset/change/TOTP; one custom DRF endpoint `DELETE /api/v1/users/me/` handles deletion. A static Astro site in `portal/` talks to it via `fetch`.
 
 **Tech Stack:** Django 6.x + DRF + django-allauth[mfa] + SimpleJWT (unchanged) · Astro static + vanilla TS · pytest · uv · ruff
 
@@ -12,10 +12,10 @@
 
 ## Global Constraints
 
-- Backend work happens in `backend/`; site in `site/`. All paths below are repo-relative.
+- Backend work happens in `backend/`; site in `portal/`. All paths below are repo-relative.
 - Signup `role` is whitelisted to `student`/`parent` only — `teacher`/`admin` rejected.
 - Existing SimpleJWT endpoints (`/api/v1/auth/token/…`) and teacher-provisioned `POST /api/v1/users/` must keep working — regression tests guard this.
-- Backend test/lint commands: `cd backend && uv run pytest` / `uv run ruff check`. Site build: `cd site && npm run build`.
+- Backend test/lint commands: `cd backend && uv run pytest` / `uv run ruff check`. Site build: `cd portal && npm run build`.
 - Pin `django-allauth[mfa]` to a version ≥7 days old (e.g. `~=65.x.y` matching what's resolved).
 - Public signup, immediate deletion — see spec for rationale.
 - Email backend: console in `local.py`/`test.py` (locmem for tests is fine); SMTP via env in production.
@@ -168,28 +168,28 @@ def test_delete_me_unauthenticated(client):
 ### Task 3: Astro site scaffold + static pages
 
 **Files:**
-- Create: `site/package.json`, `site/astro.config.mjs`, `site/tsconfig.json`, `site/.gitignore`
-- Create: `site/src/layouts/Base.astro` (header w/ logo + nav, footer links to privacy/terms/faq)
-- Create: `site/src/styles/global.css`
-- Create: `site/src/pages/{index,privacy,terms,faq}.astro`
-- Create: `site/public/logo.jpg` (copy of `frontend/assets/logo.jpg`)
+- Create: `portal/package.json`, `portal/astro.config.mjs`, `portal/tsconfig.json`, `portal/.gitignore`
+- Create: `portal/src/layouts/Base.astro` (header w/ logo + nav, footer links to privacy/terms/faq)
+- Create: `portal/src/styles/global.css`
+- Create: `portal/src/pages/{index,privacy,terms,faq}.astro`
+- Create: `portal/public/logo.jpg` (copy of `frontend/assets/logo.jpg`)
 
 **Interfaces:**
-- Produces: `site/dist` via `npm run build`; `Base.astro` layout props `{title: string}` used by all pages; shared `.btn`, `.card`, `form` styles in `global.css` reused by auth pages in Tasks 4–5.
+- Produces: `portal/dist` via `npm run build`; `Base.astro` layout props `{title: string}` used by all pages; shared `.btn`, `.card`, `form` styles in `global.css` reused by auth pages in Tasks 4–5.
 
-- [ ] **Step 1: Scaffold** — `npm create astro@latest site -- --template minimal --no-install` (or hand-write `package.json` with `astro` devDep pinned ≥7 days old; then `npm install`). `astro.config.mjs`: `export default defineConfig({ output: 'static' })` (default anyway). Copy `frontend/assets/logo.jpg` → `site/public/logo.jpg`.
+- [ ] **Step 1: Scaffold** — `npm create astro@latest site -- --template minimal --no-install` (or hand-write `package.json` with `astro` devDep pinned ≥7 days old; then `npm install`). `astro.config.mjs`: `export default defineConfig({ output: 'static' })` (default anyway). Copy `frontend/assets/logo.jpg` → `portal/public/logo.jpg`.
 
 - [ ] **Step 2: Write pages** — `index.astro`: hero ("Buku Latihan — practice past-year papers, write on worksheets, get marked"), free-for-everyone callout, links to app + FAQ. `privacy.astro` / `terms.astro`: complete generic policy text covering account data, email, submissions, deletion rights (user reviews before Play submission — keep placeholders out; write real copy). `faq.astro`: free? delete data? who can sign up? contact.
 
-- [ ] **Step 3: Verify** — `cd site && npm run build` exits 0 and `site/dist/index.html` exists; spot-check `dist/privacy/index.html`.
+- [ ] **Step 3: Verify** — `cd portal && npm run build` exits 0 and `portal/dist/index.html` exists; spot-check `dist/privacy/index.html`.
 
 - [ ] **Step 4: Commit** — `feat: scaffold Astro site with marketing/legal pages`
 
 ### Task 4: Auth API client + signup/login/reset/verify pages
 
 **Files:**
-- Create: `site/src/lib/api.ts`
-- Create: `site/src/pages/{login,signup,verify-email,reset-password}.astro`
+- Create: `portal/src/lib/api.ts`
+- Create: `portal/src/pages/{login,signup,verify-email,reset-password}.astro`
 
 **Interfaces:**
 - Consumes: headless endpoints from Task 1 under `${PUBLIC_API_URL}/_allauth/app/v1/`; allauth error shape `{errors: [{code, message, param?}]}`; `meta.session_token` on login/signup response.
@@ -213,8 +213,8 @@ def test_delete_me_unauthenticated(client):
 ### Task 5: Account page — change password, TOTP 2FA, delete
 
 **Files:**
-- Create: `site/src/pages/account.astro`
-- Modify: `site/src/lib/api.ts` if a helper is needed (e.g. `deleteAccount(password)`)
+- Create: `portal/src/pages/account.astro`
+- Modify: `portal/src/lib/api.ts` if a helper is needed (e.g. `deleteAccount(password)`)
 
 **Interfaces:**
 - Consumes: `api.ts` exports; `auth/password/change`, `auth/2fa/totp` GET/POST/DELETE, `auth/2fa/recovery-codes`, `DELETE ${PUBLIC_API_URL}/api/v1/users/me/`.
@@ -231,11 +231,11 @@ def test_delete_me_unauthenticated(client):
 ### Task 6: Deploy config + docs + final review
 
 **Files:**
-- Create: `site/wrangler.jsonc` or document Pages settings in `site/README.md` (Pages projects are usually connected via dashboard; a README with build cmd `npm run build`, output `dist`, env `PUBLIC_API_URL` suffices)
+- Create: `portal/wrangler.jsonc` or document Pages settings in `portal/README.md` (Pages projects are usually connected via dashboard; a README with build cmd `npm run build`, output `dist`, env `PUBLIC_API_URL` suffices)
 - Modify: `backend/.env.example` or README — document `EMAIL_*`, `FRONTEND_BASE_URL`, `CORS_ALLOWED_ORIGINS`, `CSRF_TRUSTED_ORIGINS`, `ACCOUNT_EMAIL_VERIFICATION`
 
-- [ ] **Step 1: Write deploy docs** — `site/README.md`: connect repo to Cloudflare Pages, build settings, env vars; backend `.env` additions for prod (SMTP creds, frontend URL, CORS).
+- [ ] **Step 1: Write deploy docs** — `portal/README.md`: connect repo to Cloudflare Pages, build settings, env vars; backend `.env` additions for prod (SMTP creds, frontend URL, CORS).
 
-- [ ] **Step 2: Full test suite** — `cd backend && uv run pytest` + `uv run ruff check`; `cd site && npm run build`. All green.
+- [ ] **Step 2: Full test suite** — `cd backend && uv run pytest` + `uv run ruff check`; `cd portal && npm run build`. All green.
 
 - [ ] **Step 3: Commit** — `docs: deploy instructions for Pages and backend env`

@@ -9,7 +9,7 @@ via `django-allauth` headless endpoints (`/_allauth/app/v1/`) with an
 ## Develop
 
 ```bash
-cd site
+cd portal
 npm install
 npm run dev     # http://localhost:4321
 ```
@@ -34,7 +34,7 @@ Local dev: copy `.env` (gitignored) or create `.env` with
 1. Cloudflare dashboard → Workers & Pages → Create → Pages → Connect to Git.
 2. Build settings:
    - **Build command:** `npm run build`
-   - **Build output directory:** `site/dist` (or set root directory to `site`
+   - **Build output directory:** `portal/dist` (or set root directory to `portal`
      and output `dist`)
 3. Environment variable: `PUBLIC_API_URL=https://<your-api-host>`.
 4. Backend must allow the Pages origin: add `https://<site>.pages.dev` (and

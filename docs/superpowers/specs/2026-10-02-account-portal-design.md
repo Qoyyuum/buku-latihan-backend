@@ -32,7 +32,7 @@ Success criteria:
 | Account deletion | Immediate `DELETE` with password confirmation (Play-compliant) |
 | Site stack | Astro, `output: 'static'`, vanilla `fetch` client, no framework islands |
 | Existing JWT (mobile app) | Unchanged — SimpleJWT endpoints remain |
-| Deployment | Cloudflare Pages, build `site/` → `site/dist` |
+| Deployment | Cloudflare Pages, build `portal/` → `portal/dist` |
 
 ## Backend changes (Django)
 
@@ -90,10 +90,10 @@ the site is the same).
 - TOTP: activate with valid code, deactivate, recovery codes issued.
 - Unauthenticated calls rejected.
 
-## Frontend (`site/` — Astro static)
+## Frontend (`portal/` — Astro static)
 
 ```
-site/
+portal/
   public/logo.jpg               (copied from frontend/assets/logo.jpg)
   src/pages/
     index.astro                 homepage: what Buku Latihan is, free note, links
@@ -121,7 +121,7 @@ site/
 2. Login: site `POST .../auth/login` → response contains session token →
    stored in `sessionStorage`, sent as `X-Session-Token` on subsequent calls.
 3. Password reset: request → allauth emails link to
-   `https://site/reset-password?key=...` → confirm posts key + new password.
+   `https://portal/reset-password?key=...` → confirm posts key + new password.
 4. Delete: `DELETE /api/v1/users/me/` with password → 204 → clear token,
    show confirmation.
 5. 2FA: `GET/POST .../auth/2fa/totp` returns secret + provisioning URI (QR
@@ -137,8 +137,8 @@ site/
 ## Deployment
 
 - Cloudflare Pages project: build command `npm run build`, build output
-  `site/dist`, root directory `site` (or build from repo root with
-  `cd site && npm run build`).
+  `portal/dist`, root directory `site` (or build from repo root with
+  `cd portal && npm run build`).
 - Env: `PUBLIC_API_URL` on Pages; on the Django side:
   `CORS_ALLOWED_ORIGINS`, `CSRF_TRUSTED_ORIGINS`, `FRONTEND_BASE_URL`,
   `EMAIL_*` SMTP settings.
