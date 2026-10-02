@@ -46,7 +46,7 @@ export async function apiFetch(
 }
 
 /** Same wrapper rooted at the headless API. */
-export function headlessFetch(
+export async function headlessFetch(
   path: string,
   init: RequestInit = {},
 ): Promise<Response> {
@@ -54,7 +54,9 @@ export function headlessFetch(
   headers.set("Content-Type", "application/json");
   const token = getToken();
   if (token) headers.set("X-Session-Token", token);
-  return fetch(`${HEADLESS}${path}`, { ...init, headers });
+  const res = await fetch(`${HEADLESS}${path}`, { ...init, headers });
+  if (res.status === 410) setToken(null);
+  return res;
 }
 
 export function post(path: string, body: unknown): Promise<Response> {

@@ -54,11 +54,15 @@ import Base from "../layouts/Base.astro";
           role: f.role.value,
         });
         const data = await res.json();
-        if (res.ok) {
+        const pendingVerify =
+          res.status === 401 &&
+          (data.data as { flows?: { id: string; is_pending?: boolean }[] })
+            ?.flows?.some((fl) => fl.id === "verify_email" && fl.is_pending);
+        if (res.ok || pendingVerify) {
           if (data.meta?.session_token) setToken(data.meta.session_token);
           msg.innerHTML = `<div class="alert ok">Account created. Please check
             <strong>${f.email.value}</strong> for a verification link, then
-            <a href="/account">continue to your account</a>.</div>`;
+            <a href="/login">log in</a>.</div>`;
           f.hidden = true;
         } else {
           msg.innerHTML = `<div class="alert error">${errorMessage(data)}</div>`;

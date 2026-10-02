@@ -58,11 +58,20 @@ import Base from "../layouts/Base.astro";
           window.location.href = "/account";
           return;
         }
+        const flows =
+          (data.data as { flows?: { id: string; is_pending?: boolean }[] })
+            ?.flows ?? [];
+        // 401 + pending verify_email → account exists but unverified
+        if (
+          flows.some((fl) => fl.id === "verify_email" && fl.is_pending)
+        ) {
+          show(
+            "Please verify your email address first — check your inbox for the verification link.",
+          );
+          return;
+        }
         // 401 with pending mfa_authenticate flow → show TOTP input
-        const needs2fa = (data.data as { flows?: { id: string }[] })?.flows?.some(
-          (fl) => fl.id === "mfa_authenticate",
-        );
-        if (needs2fa) {
+        if (flows.some((fl) => fl.id === "mfa_authenticate")) {
           f.hidden = true;
           document.getElementById("totp-form")!.hidden = false;
           return;

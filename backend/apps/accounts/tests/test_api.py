@@ -90,3 +90,18 @@ def test_delete_me_success_cascades(
 @pytest.mark.django_db
 def test_delete_me_unauthenticated(client: APIClient) -> None:
     assert client.delete("/api/v1/users/me/").status_code == 401
+
+
+@pytest.mark.django_db
+def test_delete_me_rate_limited(client: APIClient, student: User) -> None:
+    from django.core.cache import cache
+
+    cache.clear()  # throttle buckets persist across tests sharing pk=1
+    client.force_authenticate(student)
+    for _ in range(5):
+        res = client.delete(
+            "/api/v1/users/me/", {"password": "nope"}, format="json"
+        )
+        assert res.status_code == 400
+    res = client.delete("/api/v1/users/me/", {"password": "nope"}, format="json")
+    assert res.status_code == 429

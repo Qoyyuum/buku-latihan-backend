@@ -7,6 +7,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.serializers import BaseSerializer
+from rest_framework.throttling import ScopedRateThrottle
 
 from apps.accounts.api.serializers import (
     ClassroomSerializer,
@@ -49,6 +50,13 @@ class UserViewSet(
         if self.action == "create":
             return [IsTeacher()]
         return [IsAuthenticated()]
+
+    def get_throttles(self) -> list[Any]:
+        # Throttle only the password-checking DELETE; GET /me stays free.
+        if self.action == "me" and self.request.method == "DELETE":
+            self.throttle_scope = "delete_me"
+            return [ScopedRateThrottle()]
+        return super().get_throttles()
 
     @action(detail=False, methods=["get", "delete"])
     def me(self, request: Request) -> Response:

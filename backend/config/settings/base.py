@@ -9,6 +9,7 @@ from datetime import timedelta
 from pathlib import Path
 
 import environ
+from corsheaders.defaults import default_headers
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
@@ -136,13 +137,24 @@ MEDIA_ROOT = BASE_DIR / "media"
 # ------------------------------------------------------------------------------
 CORS_ALLOWED_ORIGINS: list[str] = env.list(
     "CORS_ALLOWED_ORIGINS",
-    default=["http://localhost:8081", "http://127.0.0.1:8081"],
+    default=[
+        "http://localhost:8081",
+        "http://127.0.0.1:8081",
+        "http://localhost:4321",
+        "http://127.0.0.1:4321",
+    ],
 )
+CORS_ALLOW_HEADERS = [*default_headers, "x-session-token"]
 
 # Required for admin/forms over HTTPS behind a reverse proxy.
 CSRF_TRUSTED_ORIGINS: list[str] = env.list(
     "CSRF_TRUSTED_ORIGINS",
-    default=["http://localhost:8081", "http://127.0.0.1:8081"],
+    default=[
+        "http://localhost:8081",
+        "http://127.0.0.1:8081",
+        "http://localhost:4321",
+        "http://127.0.0.1:4321",
+    ],
 )
 
 # ------------------------------------------------------------------------------
@@ -159,6 +171,9 @@ REST_FRAMEWORK = {
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 50,
+    "DEFAULT_THROTTLE_RATES": {
+        "delete_me": "5/minute",
+    },
 }
 
 SIMPLE_JWT = {
@@ -187,6 +202,9 @@ ACCOUNT_EMAIL_VERIFICATION = env(
     "ACCOUNT_EMAIL_VERIFICATION", default="mandatory"
 )
 ACCOUNT_ADAPTER = "apps.accounts.adapters.AccountAdapter"
+ACCOUNT_RATE_LIMITS = {
+    "login_failed": "10/m/ip,5/5m/key",
+}
 ACCOUNT_SIGNUP_FORM_CLASS = "apps.accounts.forms.RoleSignupForm"
 
 HEADLESS_CLIENTS = ["app"]
