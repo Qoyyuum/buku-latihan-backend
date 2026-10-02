@@ -105,6 +105,37 @@ Postgres and Redis are compose-internal — never expose their ports.
 - Postgres and Redis are single containers; for managed DB just point
   `DATABASE_URL` elsewhere and remove the `db` service.
 
+## Web frontend hosting
+
+The web SPA (`npx expo export --platform web`, `web.output: "static"`) is
+deployed to **EAS Hosting** — Expo's managed edge (Cloudflare Workers) with
+zero-config Expo Router routing.
+
+```bash
+cd frontend
+EXPO_PUBLIC_API_URL=https://api-buku.brujaga.com npx expo export -p web
+npx eas-cli deploy          # preview URL
+npx eas-cli deploy --prod   # production
+```
+
+One-time setup (requires `eas login`):
+
+```bash
+eas env:create --scope project --name EXPO_PUBLIC_API_URL \
+  --value https://api-buku.brujaga.com --environment production \
+  --visibility plaintext --non-interactive
+```
+
+`frontend/.eas/workflows/` automates this: pushes to `prod` run a
+production deploy, PRs get preview URLs. The repo must be connected to the
+Expo project (Expo dashboard → GitHub) for the triggers to fire. EAS
+Hosting is metered — check plan limits at https://expo.dev/pricing.
+
+**Cloudflare Pages fallback**: `.github/workflows/deploy-pages.yml` ships
+the same build to a `buku-latihan` Pages project. It is manual-only —
+uncomment its triggers and add `CLOUDFLARE_API_TOKEN` +
+`CLOUDFLARE_ACCOUNT_ID` secrets to activate it.
+
 ## Android app
 
 Distribute via EAS (free builds): `npx eas-cli build -p android

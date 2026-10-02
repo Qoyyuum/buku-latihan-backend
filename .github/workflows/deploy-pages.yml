@@ -1,0 +1,53 @@
+name: Deploy web to Cloudflare Pages
+
+# Currently manual-only (workflow_dispatch) — an inactive fallback while the
+# primary deploy path is EAS Hosting (frontend/.eas/workflows/).
+#
+# To activate as a live deploy path:
+#   1. Add repo secrets: CLOUDFLARE_API_TOKEN (Pages:Edit on the account) and
+#      CLOUDFLARE_ACCOUNT_ID (dashboard → right sidebar).
+#   2. Uncomment the push/pull_request triggers below.
+#   3. After the first deploy, set the Pages project's production branch to
+#      `prod` (dashboard → Workers & Pages → buku-latihan → Settings → Build).
+on:
+  workflow_dispatch:
+  # push:
+  #   branches: [prod]
+  # pull_request:
+  #   branches: [prod]
+
+env:
+  EXPO_PUBLIC_API_URL: https://api-buku.brujaga.com
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - run: npm ci
+      - run: npx expo export --platform web
+
+      - name: SPA fallback for Expo Router client-side routes
+        # Pages serves real files first; this rewrite only fires for paths
+        # with no matching asset, so deep links hit the app shell.
+        run: printf '/* /index.html 200\n' > dist/_redirects
+
+      - uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          # wrangler creates the `buku-latihan` project on first deploy.
+          command: >
+            pages deploy dist
+            --project-name=buku-latihan
+            --branch=${{ github.head_ref || github.ref_name }}

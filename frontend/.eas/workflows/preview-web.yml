@@ -1,0 +1,11 @@
+name: Web PR preview
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  preview:
+    type: deploy
+    params:
+      prod: false
