@@ -35,4 +35,6 @@ urlpatterns = [
         name="token_refresh",
     ),
     path("api/v1/", include("config.api_router")),
+    path("accounts/", include("allauth.urls")),
+    path("_allauth/", include("allauth.headless.urls")),
 ]
