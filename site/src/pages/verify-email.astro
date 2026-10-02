@@ -1,0 +1,26 @@
+---
+import Base from "../layouts/Base.astro";
+---
+
+<Base title="Verify email">
+  <h1>Verify your email</h1>
+  <div id="msg"><p class="muted">Verifying…</p></div>
+
+  <script>
+    import { post } from "../lib/api";
+
+    const msg = document.getElementById("msg")!;
+    const key = new URLSearchParams(window.location.search).get("key");
+
+    if (!key) {
+      msg.innerHTML =
+        '<div class="alert error">Missing verification key. Open the link from your email.</div>';
+    } else {
+      const res = await post("/auth/email/verify", { key });
+      const data = await res.json().catch(() => null);
+      msg.innerHTML = res.ok
+        ? '<div class="alert ok">Email verified. You can now <a href="/login">log in</a> or <a href="/account">go to your account</a>.</div>'
+        : `<div class="alert error">${data?.errors?.[0]?.message ?? "Verification link is invalid or expired."}</div>`;
+    }
+  </script>
+</Base>

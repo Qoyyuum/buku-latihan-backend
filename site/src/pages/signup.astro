@@ -1,0 +1,68 @@
+---
+import Base from "../layouts/Base.astro";
+---
+
+<Base title="Sign up">
+  <h1>Create your account</h1>
+  <div id="msg"></div>
+
+  <form id="signup-form" class="stack">
+    <label>
+      Username
+      <input name="username" type="text" required autocomplete="username" />
+    </label>
+    <label>
+      Email
+      <input name="email" type="email" required autocomplete="email" />
+    </label>
+    <label>
+      Password
+      <input
+        name="password"
+        type="password"
+        required
+        autocomplete="new-password"
+      />
+    </label>
+    <fieldset class="stack">
+      <legend>I am a…</legend>
+      <label>
+        <input type="radio" name="role" value="student" checked /> Student
+      </label>
+      <label>
+        <input type="radio" name="role" value="parent" /> Parent
+      </label>
+    </fieldset>
+    <button class="btn" type="submit">Sign up</button>
+  </form>
+
+  <p class="muted">Already have an account? <a href="/login">Log in</a></p>
+
+  <script>
+    import { post, setToken, errorMessage } from "../lib/api";
+
+    const msg = document.getElementById("msg")!;
+    document
+      .getElementById("signup-form")!
+      .addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const f = e.target as HTMLFormElement;
+        const res = await post("/auth/signup", {
+          username: f.username.value,
+          email: f.email.value,
+          password: f.password.value,
+          role: f.role.value,
+        });
+        const data = await res.json();
+        if (res.ok) {
+          if (data.meta?.session_token) setToken(data.meta.session_token);
+          msg.innerHTML = `<div class="alert ok">Account created. Please check
+            <strong>${f.email.value}</strong> for a verification link, then
+            <a href="/account">continue to your account</a>.</div>`;
+          f.hidden = true;
+        } else {
+          msg.innerHTML = `<div class="alert error">${errorMessage(data)}</div>`;
+        }
+      });
+  </script>
+</Base>

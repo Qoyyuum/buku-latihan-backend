@@ -1,0 +1,93 @@
+---
+import Base from "../layouts/Base.astro";
+---
+
+<Base title="Log in">
+  <h1>Log in</h1>
+  <div id="msg"></div>
+
+  <form id="login-form" class="stack">
+    <label>
+      Username
+      <input name="username" type="text" required autocomplete="username" />
+    </label>
+    <label>
+      Password
+      <input
+        name="password"
+        type="password"
+        required
+        autocomplete="current-password"
+      />
+    </label>
+    <button class="btn" type="submit">Log in</button>
+  </form>
+
+  <form id="totp-form" class="stack" hidden>
+    <p class="muted">
+      Two-factor authentication is enabled on this account. Enter the code
+      from your authenticator app.
+    </p>
+    <label>
+      Authentication code
+      <input name="code" type="text" inputmode="numeric" required />
+    </label>
+    <button class="btn" type="submit">Verify</button>
+  </form>
+
+  <p class="muted">
+    <a href="/reset-password">Forgot your password?</a> ·
+    <a href="/signup">Create an account</a>
+  </p>
+
+  <script>
+    import { login, post, errorMessage } from "../lib/api";
+
+    const msg = document.getElementById("msg")!;
+    const show = (text: string, ok = false) => {
+      msg.innerHTML = `<div class="alert ${ok ? "ok" : "error"}">${text}</div>`;
+    };
+
+    document
+      .getElementById("login-form")!
+      .addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const f = e.target as HTMLFormElement;
+        const data = await login(f.username.value, f.password.value);
+        if (data.meta?.is_authenticated) {
+          window.location.href = "/account";
+          return;
+        }
+        // 401 with pending mfa_authenticate flow → show TOTP input
+        const needs2fa = (data.data as { flows?: { id: string }[] })?.flows?.some(
+          (fl) => fl.id === "mfa_authenticate",
+        );
+        if (needs2fa) {
+          f.hidden = true;
+          document.getElementById("totp-form")!.hidden = false;
+          return;
+        }
+        show(errorMessage(data));
+      });
+
+    document
+      .getElementById("totp-form")!
+      .addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const f = e.target as HTMLFormElement;
+        const res = await post("/auth/2fa/authenticate", {
+          code: f.code.value,
+        });
+        const data = await res.json();
+        if (data.meta?.is_authenticated) {
+          if (data.meta.session_token) {
+            const { setToken } = await import("../lib/api");
+            setToken(data.meta.session_token);
+          }
+          window.location.href = "/account";
+        } else {
+          show(errorMessage(data));
+        }
+      });
+  </script>
+</Base>
