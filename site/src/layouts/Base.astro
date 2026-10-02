@@ -1,0 +1,46 @@
+---
+interface Props {
+  title: string;
+}
+
+const { title } = Astro.props;
+import "../styles/global.css";
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="/logo.png" />
+    <title>{title} — Buku Latihan</title>
+  </head>
+  <body>
+    <header>
+      <div class="container">
+        <img class="logo" src="/logo.png" alt="Buku Latihan logo" />
+        <a class="brand" href="/">Buku Latihan</a>
+        <nav>
+          <a href="/faq">FAQ</a>
+          <a href="/privacy">Privacy</a>
+          <a href="/terms">Terms</a>
+          <a href="/login">Log in</a>
+          <a href="/signup">Sign up</a>
+        </nav>
+      </div>
+    </header>
+    <main>
+      <div class="container">
+        <slot />
+      </div>
+    </main>
+    <footer>
+      <div class="container">
+        <a href="/privacy">Privacy Policy</a>
+        <a href="/terms">Terms of Service</a>
+        <a href="/faq">FAQ</a>
+        <span>Buku Latihan is free for everyone.</span>
+      </div>
+    </footer>
+  </body>
+</html>

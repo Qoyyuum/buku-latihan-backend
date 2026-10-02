@@ -22,6 +22,7 @@ web-build/
 # Env / secrets
 .env
 site/
+!/site/
 .envs/.local/
 .envs/.production/
 !.envs/.local/example.*
